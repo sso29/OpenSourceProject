@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.1
+    container_name: opensource_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: opendb
+      MYSQL_USER: open
+      MYSQL_PASSWORD: open1234
+      TZ: Asia/Seoul
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opensource_app
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/opendb?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: open
+      SPRING_DATASOURCE_PASSWORD: open1234
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      TZ: Asia/Seoul
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
