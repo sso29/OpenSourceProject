@@ -9,18 +9,17 @@ import {
 } from '@mui/material';
 
 const UserInfoPage = () => {
-  // 택1
+
   const GROUPS = ['가족', '연인', '혼자', '친구'];
   const LEVELS = ['입문', '초보', '중수', '고수'];
 
-  // 다중 선택
   const GENRES = ['공포-스릴러', '멜로', '코미디', '액션', 'SF'];
-  const MOODS = ['힐링', '긴장감', '유쾌', '현실적', '감동적']; // '현실적' 중복 제거
+  const MOODS = ['힐링', '긴장감', '유쾌', '현실적', '감동적'];
 
   const [group, setGroup] = useState('');
   const [level, setLevel] = useState('');
-  const [genres, setGenres] = useState([]); // array
-  const [moods, setMoods] = useState([]);   // array
+  const [genres, setGenres] = useState([]);
+  const [moods, setMoods] = useState([]);
 
   const handleGroupChange = (_e, val) => { if (val !== null) setGroup(val); };
   const handleLevelChange = (_e, val) => { if (val !== null) setLevel(val); };
@@ -34,7 +33,7 @@ const UserInfoPage = () => {
     if (!group) return alert('구성원을 선택해주세요!');
     if (!level) return alert('숙련도를 선택해주세요!');
     if (genres.length === 0) return alert('선호 장르를 1개 이상 선택해주세요!');
-    if (moods.length === 0) return alert('감정 분위기를 1개 이상 선택해주세요!');
+    if (moods.length === 0) return alert('분위기를 1개 이상 선택해주세요!');
 
     const payload = { group, level, genres, moods };
     console.log('온보딩 선택값:', payload);
