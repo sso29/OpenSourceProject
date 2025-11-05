@@ -1,4 +1,4 @@
-/* src/components/Navbar.css */
+/* src/components/Navbar.css
 .navbar {
   display: flex;
   justify-content: space-between;
@@ -24,4 +24,53 @@
 
 .navbar-links a:hover {
   text-decoration: underline;
+} */
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 2rem;
+  background-color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-brand {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #636e79;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.navbar-brand:hover {
+  color: #0d47a1;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1.2rem;
+}
+
+.navbar-links a {
+  color: #555;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s;
+  position: relative;
+  padding-bottom: 3px;
+}
+
+.navbar-links a:hover {
+  color: #cecece;
+}
+
+/* 현재 페이지(active) 표시 */
+.navbar-links a.active {
+  color: #eb4040;
+  font-weight: 600;
+  border-bottom: 2px solid #dc5959;
 }

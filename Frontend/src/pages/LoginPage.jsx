@@ -58,6 +58,7 @@ import {
   Typography,
   Paper,
 } from '@mui/material';
+import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -135,6 +136,13 @@ const LoginPage = () => {
             로그인
           </Button>
         </Box>
+        <div style={{ padding: '16px', textAlign: 'center' }}>
+  계정이 없으신가요?{' '}
+  <Link to="/register" style={{ color: '#1976d2', textDecoration: 'none' }}>
+    회원가입 하기
+  </Link>
+</div>
+
         
         
         
