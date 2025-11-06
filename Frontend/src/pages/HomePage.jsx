@@ -75,7 +75,11 @@ const PlaceholderScroller = ({ count = 10, ratio = "3/4" }) => {
               borderColor: "divider",
             }}
           >
-            <CardActionArea onClick={() => { /* 추후 링크 */ }}>
+            <CardActionArea
+              onClick={() => {
+                /* 추후 링크 */
+              }}
+            >
               <CardMedia
                 component="div"
                 sx={{
@@ -148,6 +152,12 @@ const HomePage = () => {
     return items.length ? items.join(" · ") : "선호 정보를 선택해 보세요.";
   }, [group, level, genres, moods]);
 
+  const titlePrefix = useMemo(() => {
+    const parts = summary.split(" · ");
+
+    return parts.join(" "); // 띄어쓰기가 적용된 문자열 반환
+  }, [summary]);
+
   return (
     <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
       <Stack spacing={1.25} sx={{ mb: 2 }}>
@@ -198,7 +208,11 @@ const HomePage = () => {
         </Stack>
 
         {/* 장르 / 분위기 (다중 선택) */}
-        <Stack direction={{ xs: "column", md: "row" }} spacing={0.75} useFlexGap>
+        <Stack
+          direction={{ xs: "column", md: "row" }}
+          spacing={0.75}
+          useFlexGap
+        >
           <Stack direction="row" sx={{ flex: 1, flexWrap: "wrap", gap: 0.5 }}>
             {GENRES.map((g) => {
               const selected = genres.includes(g);
@@ -244,23 +258,40 @@ const HomePage = () => {
       </Stack>
 
       <Box sx={{ mb: 3 }}>
-        <SectionTitle>이번 주 인기작 (예시)</SectionTitle>
+        <SectionTitle>
+          <span style={{ color: "#00bcd4" }}>{titlePrefix}</span> 맞춤 추천작품
+        </SectionTitle>
         <PlaceholderScroller count={12} ratio="3/4" />
       </Box>
 
       <Box sx={{ mb: 3 }}>
-        <SectionTitle>맞춤 추천작 (예시)</SectionTitle>
-        <PlaceholderScroller count={12} ratio="3/4" />
-      </Box>
-
-      <Box sx={{ mb: 3 }}>
-        <SectionTitle>시청한 컨텐츠 (예시)</SectionTitle>
-        <PlaceholderScroller count={12} ratio="3/4" />
-      </Box>
-
-      <Box sx={{ mb: 3 }}>
-        <SectionTitle>관련 여행지(예시)</SectionTitle>
+        <SectionTitle>추천 여행지(예시)</SectionTitle>
         <PlaceholderScroller count={12} ratio="1/1" />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>추천 이벤트(예시)</SectionTitle>
+        <PlaceholderScroller count={12} ratio="1/1" />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>
+          {" "}
+          <span style={{ color: "#e71616ff" }}>{summary.split(" · ")[0]}</span>
+          보기 좋은 작품
+        </SectionTitle>
+        <PlaceholderScroller count={12} ratio="3/4" />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>
+          <span style={{ color: "#edb90cff" }}>
+            {" "}
+            k-contents {summary.split(" · ")[1]}
+          </span>
+          를 위한 추천 작품
+        </SectionTitle>
+        <PlaceholderScroller count={12} ratio="3/4" />
       </Box>
 
       <Box sx={{ mb: 3 }}>
