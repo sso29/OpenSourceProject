@@ -4,7 +4,6 @@ import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
 import './App.css';
-import UserInfoPage from "./pages/UserInfoPage.jsx";
 
 function App() {
   return (
@@ -15,8 +14,6 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/userinfo" element={<UserInfoPage />} />
-          {/* 향후 추가될 라우트들을 여기에 추가합니다. */}
         </Routes>
       </div>
     </Router>
