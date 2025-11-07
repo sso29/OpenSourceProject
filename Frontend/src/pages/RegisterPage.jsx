@@ -73,6 +73,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     id: '',
     pw: '',
+    pwConfirm: '',
     name: '',
     age: '',
     gender: '',
@@ -84,10 +85,30 @@ const RegisterPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('회원가입 정보:', formData);
-    alert('회원가입이 완료되었습니다!');
+
+    try {
+      const response = await fetch('/api/users/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || '회원가입 실패');
+      }
+
+      const data = await response.json();
+      console.log('회원가입 성공: ', data);
+      alert('회원가입이 완료되었습니다!');
+    } catch (error) {
+      console.error('회원가입 오류: ', error.message);
+      alert('회원가입 중 문제가 발생했습니다.');
+    }
   };
 
   return (
@@ -138,6 +159,16 @@ const RegisterPage = () => {
             fullWidth
             required
             value={formData.pw}
+            onChange={handleChange}
+          />
+          <TextField
+            label="비밀번호 확인"
+            name="pwConfirm"
+            type="password"
+            size="small"
+            fullWidth
+            required
+            value={formData.pwConfirm}
             onChange={handleChange}
           />
           <TextField

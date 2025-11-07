@@ -11,7 +11,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
-                        "http://localhost:8080"         // 프론트에서 넣을 주소
+                        "http://localhost:5173"         // vite 기반 react 주소
                 )
                 .allowedMethods("*")
                 .allowCredentials(true);                // 쿠키 허용

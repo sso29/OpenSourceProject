@@ -61,13 +61,34 @@ import {
 import { Link } from 'react-router-dom';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [id, setId] = useState('');
+  const [pw, setPassword] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('로그인 정보:', { email, password });
-    alert('로그인 요청이 처리되었습니다!');
+
+    try {
+      const response = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',   // 세션 및 쿠키 유지
+        body: JSON.stringify({ id, pw }),
+      });;
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('로그인 성공: ', data);
+        alert('로그인 성공!');
+      } else {
+        const errorText = await response.text();
+        alert('로그인 실패: ' + errorText);
+      }
+    } catch (err) {
+        console.error('서버 오류: ', err);
+        alert('서버 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -100,12 +121,11 @@ const LoginPage = () => {
           }}
         >
           <TextField
-            label="이메일"
-            type="email"
+            label="아이디"
+            type="id"
             size='small'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-        
+            value={id}
+            onChange={(e) => setId(e.target.value)}
             required
             fullWidth
           />
@@ -114,7 +134,7 @@ const LoginPage = () => {
             label="비밀번호"
             size='small'
             type="password"
-            value={password}
+            value={pw}
             onChange={(e) => setPassword(e.target.value)}
             required
             fullWidth
