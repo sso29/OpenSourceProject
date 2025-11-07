@@ -80,6 +80,7 @@ const PlaceholderScroller = ({ count = 10, ratio = "3/4" }) => {
                 /* 추후 링크 */
               }}
             >
+            <CardActionArea onClick={() => { /* 추후 링크 */ }}>
               <CardMedia
                 component="div"
                 sx={{
@@ -213,6 +214,7 @@ const HomePage = () => {
           spacing={0.75}
           useFlexGap
         >
+        <Stack direction={{ xs: "column", md: "row" }} spacing={0.75} useFlexGap>
           <Stack direction="row" sx={{ flex: 1, flexWrap: "wrap", gap: 0.5 }}>
             {GENRES.map((g) => {
               const selected = genres.includes(g);
@@ -261,11 +263,23 @@ const HomePage = () => {
         <SectionTitle>
           <span style={{ color: "#00bcd4" }}>{titlePrefix}</span> 맞춤 추천작품
         </SectionTitle>
+        <SectionTitle>이번 주 인기작 (예시)</SectionTitle>
         <PlaceholderScroller count={12} ratio="3/4" />
       </Box>
 
       <Box sx={{ mb: 3 }}>
         <SectionTitle>추천 여행지(예시)</SectionTitle>
+        <SectionTitle>맞춤 추천작 (예시)</SectionTitle>
+        <PlaceholderScroller count={12} ratio="3/4" />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>시청한 컨텐츠 (예시)</SectionTitle>
+        <PlaceholderScroller count={12} ratio="3/4" />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>관련 여행지(예시)</SectionTitle>
         <PlaceholderScroller count={12} ratio="1/1" />
       </Box>
 
