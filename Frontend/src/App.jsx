@@ -14,7 +14,6 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          {/* 향후 추가될 라우트들을 여기에 추가합니다. */}
         </Routes>
       </div>
     </Router>
