@@ -553,7 +553,7 @@ const HomePage = () => {
         <SectionTitle>
           <span style={{ color: "#edb90cff" }}>
             {summary.split(" · ")[1]}
-          </span> 님을 위한 추천 작품
+          </span> OO님을 위한 추천 작품
         </SectionTitle>
         <ContentScroller items={tvShows} ratio="3/4" />
       </Box>
