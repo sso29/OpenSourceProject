@@ -30,6 +30,21 @@ services:
       TZ: Asia/Seoul
     depends_on:
       - db
+      - ai
+  
+  ai:
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    container_name: opensource_ai
+    ports:
+      - "5000:5000"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      TZ: Asia/Seoul
+    volumes:
+      - ./Frontend/src/data:/app/data:ro
+    restart: always
 
 volumes:
   mysql_data:

@@ -1,0 +1,148 @@
+[33mcommit f456bb62c94be57b68d2d6adde1519608b4d3403[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mgovdl[m[33m)[m
+Author: govdl <guss1301@gmail.com>
+Date:   Sun Nov 16 18:08:20 2025 +0900
+
+    ai 추가
+
+[33mcommit b8c8335b55b2614562379de61c9ea39efab6d24f[m
+Merge: b7e6dea 9c361d7
+Author: govdl <guss1301@gmail.com>
+Date:   Tue Nov 11 20:12:44 2025 +0900
+
+    Merge remote-tracking branch 'origin/haim' into govdl
+
+[33mcommit 9c361d729919528745d95d12ed59c3c19864f881[m[33m ([m[1;31morigin/haim[m[33m)[m
+Author: haim <gkgk3894@gmail.com>
+Date:   Tue Nov 11 16:57:02 2025 +0900
+
+    11.11 컨텐츠 연결
+
+[33mcommit b7e6deaf15f7756bd2002eee84ab8a961d112383[m[33m ([m[1;31morigin/govdl[m[33m)[m
+Author: govdl <guss1301@gmail.com>
+Date:   Fri Nov 7 17:40:42 2025 +0900
+
+    back-front
+
+[33mcommit 4fd491afc5660b52be921af8b484a0410e608f63[m
+Merge: f77ab68 1657214
+Author: govdl <guss1301@gmail.com>
+Date:   Fri Nov 7 16:42:32 2025 +0900
+
+    Merge remote-tracking branch 'origin/zino' into govdl
+
+[33mcommit f77ab684fe2782d95c4103f5966ee6c2a55e3151[m
+Merge: 085bd6b f0623d2
+Author: govdl <guss1301@gmail.com>
+Date:   Fri Nov 7 16:38:26 2025 +0900
+
+    Merge remote-tracking branch 'origin/haim' into govdl
+
+[33mcommit f0623d2f52099a3d8b15c558b52f435b39d9b685[m
+Author: vvv3894 <gkgk3894@gmail.com>
+Date:   Fri Nov 7 00:09:56 2025 +0900
+
+    1107
+
+[33mcommit 7e59ec7f1fed0d86cfe5d767a1837f78293d3704[m
+Author: aglio_olio_man <dlwlsgh1200@gmail.com>
+Date:   Thu Nov 6 22:03:27 2025 +0900
+
+    cherry-pick
+
+[33mcommit 16572145c7249a0966b6b14770259dceecded118[m
+Author: aglio_olio_man <dlwlsgh1200@gmail.com>
+Date:   Thu Nov 6 22:03:27 2025 +0900
+
+    remove UserInfoPage(replace-homepage.jsx), Update App.jsx, HomePage.jsx(메인페이지 초안)
+
+[33mcommit 2993985075bbb61c3c7d0999167710a9b9ea782d[m
+Author: aglio_olio_man <dlwlsgh1200@gmail.com>
+Date:   Wed Nov 5 20:02:26 2025 +0900
+
+    feat: UserInfoPage 질문 추가
+
+[33mcommit a6d358e02e9f2beb196fb0f4fdbcbe086ff46d2b[m
+Author: aglio_olio_man <dlwlsgh1200@gmail.com>
+Date:   Wed Nov 5 19:51:03 2025 +0900
+
+    feat: UserInfoPage 질문 추가
+
+[33mcommit 4cec19ac4b8933090fd230c226baef00a927cf11[m
+Author: haim <gkgk3894@gmail.com>
+Date:   Wed Nov 5 14:35:11 2025 +0900
+
+    ui수정
+
+[33mcommit afb81d9109a5fd47fc83b1e7321835a8a8d1b629[m
+Author: haim <gkgk3894@gmail.com>
+Date:   Wed Nov 5 00:02:27 2025 +0900
+
+    login
+
+[33mcommit 085bd6ba756100358874cd7be07188ba57d03310[m
+Author: govdl <guss1301@gmail.com>
+Date:   Tue Nov 4 21:29:36 2025 +0900
+
+    프로필 설정
+
+[33mcommit be1109f851b334f73bbd7d0ae5ef327aab381111[m
+Merge: 0516ed9 20a4e7b
+Author: govdl <guss1301@gmail.com>
+Date:   Tue Nov 4 14:08:52 2025 +0900
+
+    Merge remote-tracking branch 'origin/sso29' into govdl
+
+[33mcommit 0516ed95b09eeae6a128ee991bfa80a12ddd68ad[m
+Author: govdl <guss1301@gmail.com>
+Date:   Tue Nov 4 13:54:55 2025 +0900
+
+    docker
+
+[33mcommit 36266139ca07b46dd25e85cf13d15096d420f010[m
+Merge: 242b221 20a4e7b
+Author: haim <gkgk3894@gmail.com>
+Date:   Tue Nov 4 11:53:42 2025 +0900
+
+    Merge
+
+[33mcommit fb6ecfb4b600335e2d0d408a60e0b34032aac69c[m
+Author: govdl <guss1301@gmail.com>
+Date:   Tue Nov 4 10:38:49 2025 +0900
+
+    docker
+
+[33mcommit a58c19914c86b7d325e1603682b3690230f48cd4[m
+Author: govdl <guss1301@gmail.com>
+Date:   Mon Nov 3 22:06:19 2025 +0900
+
+    회원가입 및 로그인
+
+[33mcommit 20a4e7b22dcebc1abbeef6b6d466f921a84b0533[m[33m ([m[1;31morigin/sso29[m[33m)[m
+Author: sso29 <sso29@sso29ui-MacBookPro.local>
+Date:   Mon Nov 3 22:00:50 2025 +0900
+
+    Initial Pages
+
+[33mcommit b4a738f078a872d6b85fe1ef732b31db0e8c2e6c[m
+Author: sso29 <sso29@sso29ui-MacBookPro.local>
+Date:   Mon Nov 3 20:49:44 2025 +0900
+
+    First Commit
+
+[33mcommit 42d1c14f2eabf669ae945a0275889afe3b45cf5b[m
+Author: govdl <guss1301@gmail.com>
+Date:   Mon Nov 3 20:39:46 2025 +0900
+
+    db 설정
+
+[33mcommit 242b221e109b3c7329e85eba97eae00e0753b1ee[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: govdl <guss1301@gmail.com>
+Date:   Mon Nov 3 20:37:26 2025 +0900
+
+    first commit
+
+[33mcommit b096ea9715d429a0227c0b35ff69f370029912a6[m
+Author: sso29 <sso29@sso29ui-MacBookPro.local>
+Date:   Mon Nov 3 20:35:26 2025 +0900
+
+    first commit
