@@ -6,6 +6,7 @@ services:
     container_name: opensource_db
     restart: always
     environment:
+      MYSQL_ROOT_PASSWORD: root1234
       MYSQL_DATABASE: opendb
       MYSQL_USER: open
       MYSQL_PASSWORD: open1234
