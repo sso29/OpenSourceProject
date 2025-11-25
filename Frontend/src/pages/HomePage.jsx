@@ -345,7 +345,9 @@ import {
   CardActionArea,
   CardContent,
   CardMedia,
+  Chip,
   Container,
+  Divider,
   Grid,
   IconButton,
   Paper,
@@ -356,19 +358,108 @@ import {
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+// 1. react-router-dom의 useNavigate를 임포트합니다.
 import { useNavigate } from "react-router-dom";
+
+// 2. JSON 데이터를 임포트합니다. (경로 확인 필수!)
+// 경로를 수정했습니다. ( ../data -> ./data )
+// src/pages/data/contentsExample.json 에 파일이 있다고 가정합니다.
 import allContent from "../data/contentsExample.json";
+import ostMap from "../data/ostMap.json";
 
 /* ---------- 옵션 목록 ---------- */
-const LEVELS = ["입문자", "초보자", "중수", "고수"];
+const LEVELS = ["입문", "초보", "중수", "고수"];
 
-/* ---------- ContentScroller ---------- */
+/* ---------- (수정) ContentScroller: 데이터를 받아 카드를 생성합니다 ---------- */
+// 'count' 대신 'items' (데이터 배열)을 prop으로 받도록 수정
 const ContentScroller = ({ items = [], ratio = "3/4" }) => {
   const ref = useRef(null);
   const scrollBy = (amt) =>
     ref.current?.scrollBy({ left: amt, behavior: "smooth" });
 
+  // 3. navigate 훅을 사용합니다.
   const navigate = useNavigate();
+
+  return (
+    <Box sx={{ position: "relative" }}>
+      <IconButton
+        aria-label="prev"
+        onClick={() => scrollBy(-600)}
+        sx={{ position: "absolute", top: -40, right: 56, zIndex: 1 }}
+        size="small"
+      >
+        <ChevronLeftIcon />
+      </IconButton>
+      <IconButton
+        aria-label="next"
+        onClick={() => scrollBy(600)}
+        sx={{ position: "absolute", top: -40, right: 12, zIndex: 1 }}
+        size="small"
+      >
+        <ChevronRightIcon />
+      </IconButton>
+
+      <Box
+        ref={ref}
+        sx={{
+          display: "flex",
+          gap: 1.5,
+          overflowX: "auto",
+          scrollBehavior: "smooth",
+          pr: 8,
+          pb: 0.5,
+        }}
+      >
+        {/* 4. Array.from 대신 실제 items 배열을 map()으로 순회합니다. */}
+        {items.map((item) => (
+          <Card
+            key={item.search_title} // 5. 고유한 key로 search_title 사용
+            sx={{
+              width: 160,
+              borderRadius: 2,
+              flex: "0 0 auto",
+              bgcolor: "background.default",
+              border: "1px solid",
+              borderColor: "divider",
+            }}
+          >
+            <CardActionArea
+              onClick={() => {
+                // 6. 클릭 시 DetailPage로 이동 (id로 search_title 전달)
+                navigate(`/item/${item.search_title}`);
+              }}
+            >
+              <CardMedia
+                component="img" // 7. 'div' -> 'img'로 변경 (사진)
+                sx={{
+                  aspectRatio: ratio,
+                  bgcolor: "action.hover", // 로딩 중 배경색
+                }}
+                image={item.poster_url} // 8. 포스터 URL 적용 (사진)
+                alt={item.title} // (이름)
+              />
+              <CardContent sx={{ py: 0.75 }}>
+                <Typography variant="body2" noWrap>
+                  {item.title} {/* 9. 실제 제목 적용 (이름) */}
+                </Typography>
+                <Typography variant="caption" noWrap color="text.secondary">
+                  {/* 10. media_type에 따라 '영화' 또는 'TV' 표시 (타입) */}
+                  {item.media_type === "movie" ? "영화" : "TV"}
+                </Typography>
+              </CardContent>
+            </CardActionArea>
+          </Card>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+/* ---------- OST 전용 가로 스크롤 ---------- */
+const OstScroller = ({ items = [], ratio = "4/3" }) => {
+  const ref = useRef(null);
+  const scrollBy = (amt) =>
+    ref.current?.scrollBy({ left: amt, behavior: "smooth" });
 
   return (
     <Box sx={{ position: "relative" }}>
@@ -402,9 +493,9 @@ const ContentScroller = ({ items = [], ratio = "3/4" }) => {
       >
         {items.map((item) => (
           <Card
-            key={item.search_title}
+            key={item.key || item.search_title}
             sx={{
-              width: 160,
+              width: 180,
               borderRadius: 2,
               flex: "0 0 auto",
               bgcolor: "background.default",
@@ -413,25 +504,44 @@ const ContentScroller = ({ items = [], ratio = "3/4" }) => {
             }}
           >
             <CardActionArea
-              onClick={() => {
-                navigate(`/item/${item.search_title}`);
-              }}
+              component={item.spotifyUrl ? "a" : "div"}
+              href={item.spotifyUrl || undefined}
+              target={item.spotifyUrl ? "_blank" : undefined}
+              rel={item.spotifyUrl ? "noreferrer" : undefined}
             >
-              <CardMedia
-                component="img"
-                sx={{
-                  aspectRatio: ratio,
-                  bgcolor: "action.hover",
-                }}
-                image={item.poster_url}
-                alt={item.title}
-              />
+              {item.cover ? (
+                <CardMedia
+                  component="img"
+                  sx={{
+                    aspectRatio: ratio,
+                    width: "100%",
+                    objectFit: "cover",
+                    bgcolor: "action.hover",
+                  }}
+                  image={item.cover}
+                  alt={`${item.contentTitle || "OST"} 커버`}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    aspectRatio: ratio,
+                    width: "100%",
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: "action.hover",
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    OST
+                  </Typography>
+                </Box>
+              )}
               <CardContent sx={{ py: 0.75 }}>
                 <Typography variant="body2" noWrap>
-                  {item.title}
+                  {item.contentTitle || item.title}
                 </Typography>
-                <Typography variant="caption" noWrap color="text.secondary">
-                  {item.media_type === "movie" ? "영화" : "TV"}
+                <Typography variant="caption" color="text.secondary" noWrap>
+                  {item.trackTitle || item.title} - {item.trackArtist || ""}
                 </Typography>
               </CardContent>
             </CardActionArea>
@@ -448,7 +558,7 @@ const SectionTitle = ({ children }) => (
   </Typography>
 );
 
-/* ---------- 필 버튼 스타일 ---------- */
+/* ---------- 필 버튼 스타일 (동일) ---------- */
 const pillSx = {
   px: 1.6,
   minHeight: 30,
@@ -467,15 +577,18 @@ const HomePage = () => {
   const [level, setLevel] = useState("");
 
   const summary = useMemo(() => {
-    const items = [level].filter(Boolean);
-    return items.length ? items.join(" · ") : "옵션 선택";
+    return level || "옵션 선택";
   }, [level]);
+  const primaryLabel = useMemo(() => level || "추천", [level]);
+  const secondaryLabel = useMemo(() => level || "전체", [level]);
 
   const titlePrefix = useMemo(() => {
+    // ... (이 부분은 기존과 동일)
     const parts = summary.split(" · ");
     return parts.join(" ");
   }, [summary]);
 
+  // 11. (추가) 불러온 JSON 데이터를 영화와 TV로 분리 (useMemo로 캐싱)
   const movies = useMemo(
     () => allContent.filter((c) => c.media_type === "movie"),
     []
@@ -484,42 +597,43 @@ const HomePage = () => {
     () => allContent.filter((c) => c.media_type === "tv"),
     []
   );
+  const ostItems = useMemo(
+    () =>
+      allContent.flatMap((c) =>
+        (ostMap[c.search_title] || []).map((track, idx) => ({
+          key: `${c.search_title}-${idx}`,
+          contentTitle: c.title,
+          trackTitle: track.title,
+          trackArtist: track.artist,
+          cover: track.cover,
+          spotifyUrl: track.spotifyUrl,
+        }))
+      ),
+    [allContent]
+  );
 
   return (
     <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
+      {/* ----- 상단 필터 부분 (기존과 동일) ----- */}
       <Stack spacing={1.25} sx={{ mb: 2 }}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={0.75}
-          useFlexGap
-          justifyContent="flex-start"
+        <ToggleButtonGroup
+          value={level}
+          exclusive
+          onChange={(_, v) => v !== null && setLevel(v)}
+          sx={{
+            flexWrap: "wrap",
+            gap: 0.5,
+            "& .MuiToggleButton-root": { ...pillSx, borderWidth: 1 },
+            "& .Mui-selected": pillSelectedSx,
+          }}
+          size="small"
         >
-          <ToggleButtonGroup
-            value={level}
-            exclusive
-            onChange={(_, v) => v !== null && setLevel(v)}
-            sx={{
-              justifyContent: "flex-start",
-              flexWrap: "wrap",
-              gap: 0.8, 
-              "& .MuiToggleButton-root": {
-                ...pillSx,
-                borderWidth: 1,
-                px: 3.5, 
-                minWidth: 90, 
-              },
-              "& .Mui-selected": pillSelectedSx,
-            }}
-            size="small"
-          >
-            {LEVELS.map((l) => (
-              <ToggleButton key={l} value={l} size="small">
-                {l}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-
-        </Stack>
+          {LEVELS.map((l) => (
+            <ToggleButton key={l} value={l} size="small">
+              {l}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
       </Stack>
       {/* ----- (필터 끝) ----- */}
 
@@ -527,74 +641,46 @@ const HomePage = () => {
         <SectionTitle>
           <span style={{ color: "#00bcd4" }}>{titlePrefix}</span> 맞춤 추천작품
         </SectionTitle>
+        {/* 12. PlaceholderScroller -> ContentScroller로 변경, items에 movies 데이터 전달 */}
         <ContentScroller items={movies} ratio="3/4" />
       </Box>
 
-     {/* <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3 }}>
         <SectionTitle>추천 여행지(예시)</SectionTitle>
+        {/* 13. (수정) 데이터가 없으므로 빈 배열을 전달 (기존 count={12} 대신) */}
         <ContentScroller items={[]} ratio="1/1" />
       </Box>
 
       <Box sx={{ mb: 3 }}>
         <SectionTitle>추천 이벤트(예시)</SectionTitle>
         <ContentScroller items={[]} ratio="1/1" />
-      </Box>*/}
+      </Box>
 
       <Box sx={{ mb: 3 }}>
         <SectionTitle>
-          <span style={{ color: "#e71616ff" }}>
-            {summary.split(" · ")[0]}
-          </span> 보기 좋은 작품
+          <span style={{ color: "#e71616ff" }}>{primaryLabel}</span>
+          보기 좋은 작품
         </SectionTitle>
+        {/* 14. (수정) Placeholder -> ContentScroller로 변경, 우선 movies 데이터를 보여줌 */}
         <ContentScroller items={movies} ratio="3/4" />
       </Box>
 
       <Box sx={{ mb: 3 }}>
         <SectionTitle>
           <span style={{ color: "#edb90cff" }}>
-            {summary.split(" · ")[1]}
-          </span> OO님을 위한 추천 작품
+            {secondaryLabel}
+          </span>
+          를 위한 추천 작품
         </SectionTitle>
+        {/* 15. (수정) Placeholder -> ContentScroller로 변경, 우선 tvShows 데이터를 보여줌 */}
         <ContentScroller items={tvShows} ratio="3/4" />
       </Box>
 
-      {/*<Box sx={{ mb: 3 }}>
-        <SectionTitle>ost(예시)</SectionTitle>
-        <Grid container spacing={1.5}>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Grid key={i} item xs={12} sm={6} md={4} lg={3}>
-              <Card
-                sx={{
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  bgcolor: "background.default",
-                  border: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <CardActionArea onClick={() => {}}>
-                  <Box
-                    sx={{
-                      aspectRatio: "4 / 3",
-                      width: "100%",
-                      display: "grid",
-                      placeItems: "center",
-                      bgcolor: "action.hover",
-                    }}
-                  >
-                    <Typography variant="caption" color="text.secondary">
-                      이미지
-                    </Typography>
-                  </Box>
-                  <CardContent sx={{ py: 0.75 }}>
-                    <Typography variant="body2">(제목-가수)</Typography>
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>*/}
+      {/* ----- OST 가로 스크롤 ----- */}
+      <Box sx={{ mb: 3 }}>
+        <SectionTitle>OST</SectionTitle>
+        <OstScroller items={ostItems} />
+      </Box>
     </Container>
   );
 };
