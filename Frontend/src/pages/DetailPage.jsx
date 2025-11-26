@@ -134,8 +134,7 @@ const DetailPage = () => {
         
         // (주의) URL 인코딩: '선재 업고 튀어' -> '선재%20업고%20튀어'
         const encodedTitle = encodeURIComponent(id);
-        // const response = await fetch(`http://localhost:5001/recommend/${encodedTitle}`);
-        const response = await fetch(`/ai-api/recommend/${encodedTitle}`);
+        const response = await fetch(`http://localhost:5000/recommend/${encodedTitle}`);
 
         if (!response.ok) {
           const errData = await response.json();
