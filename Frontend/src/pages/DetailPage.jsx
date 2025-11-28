@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react"; // (수정) useState, useEffect 임포트
-// 1. URL의 파라미터 값을 읽기 위한 useParams
-// 2. 홈으로 돌아가기 위한 Link (MUI Button과 함께 사용하기 위해 RouterLink로 별칭)
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import {
   Container,
@@ -9,17 +7,14 @@ import {
   Box,
   Chip,
   Stack,
-  CircularProgress, // (신규) 로딩 스피너
-  Paper, // (신규) 마크다운을 감쌀 UI
-  Alert, // (신규) 오류 표시
+  CircularProgress,
+  Paper,
+  Alert,
 } from "@mui/material";
 
-// 3. (경로 수정) 'src/pages' 폴더에서 한 단계 위('src')로 이동 후
-//    'data' 폴더 안의 'contentsExample.json' 파일을 찾습니다.
 import allContent from "../data/contentsExample.json";
 
-// --- (신규) AI 응답 (마크다운)을 "예쁘게" 렌더링할 헬퍼 컴포넌트 ---
-// 간단한 마크다운 파서 (h2, h3, bold, list item, p)
+// --- 마크다운 뷰어 컴포넌트 ---
 const MarkdownViewer = ({ content }) => {
   if (!content) {
     return null;
@@ -32,7 +27,6 @@ const MarkdownViewer = ({ content }) => {
       {lines.map((line, index) => {
         line = line.trim();
 
-        // H2 (## 🎬 '제목'...)
         if (line.startsWith("## ")) {
           return (
             <Typography
@@ -46,9 +40,7 @@ const MarkdownViewer = ({ content }) => {
           );
         }
         
-        // H3 (1. **[장소]**)
         if (/^\d+\.\s\*\*.+\*\*$/.test(line)) {
-           // "1. **[장소 1 이름]**" -> "[장소 1 이름]"
            const title = line.substring(line.indexOf("**") + 2, line.lastIndexOf("**"));
            return (
              <Typography key={index} variant="h6" component="h3" sx={{ mt: 2.5, mb: 1, fontWeight: 600 }}>
@@ -57,13 +49,11 @@ const MarkdownViewer = ({ content }) => {
            );
          }
 
-        // 목록 ( - **위치:** ...)
         if (line.startsWith("- ")) {
           const boldMatch = line.match(/\*\*(.*?)\*\*/);
           if (boldMatch) {
-            // **위치:** (설명)
             const label = boldMatch[1];
-            const text = line.substring(boldMatch[0].length + 2); // "- " 이후, bold 이후
+            const text = line.substring(boldMatch[0].length + 2);
             return (
               <Box key={index} sx={{ display: "flex", pl: 2 }}>
                 <Typography component="span" sx={{ fontWeight: "bold", mr: 1 }}>
@@ -75,7 +65,6 @@ const MarkdownViewer = ({ content }) => {
           }
         }
         
-        // Bold (마무리 멘트)
         if (line.startsWith("**") && line.endsWith("**")) {
            return (
              <Typography key={index} variant="body1" sx={{ mt: 3, fontStyle: 'italic', fontWeight: 500 }}>
@@ -84,7 +73,6 @@ const MarkdownViewer = ({ content }) => {
            );
          }
 
-        // 기본 문단
         if (line.length > 0) {
           return (
             <Typography key={index} variant="body1" paragraph sx={{ mb: 1 }}>
@@ -98,41 +86,167 @@ const MarkdownViewer = ({ content }) => {
     </Box>
   );
 };
-// --- 헬퍼 컴포넌트 끝 ---
 
+// --- 마크다운에서 장소 추출 ---
+// --- 마크다운에서 장소 추출 (개선된 버전) ---
+const parsePlacesFromMarkdown = (md) => {
+  if (!md) return [];
+  
+  const lines = md.split("\n");
+  const places = [];
+  let currentPlace = null;
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+
+    // 1. 숫자 + 점(.) 으로 시작하는 줄을 장소 이름으로 인식 (볼드 여부 상관없이)
+    // 예: "1. **남산 타워**", "1. 남산 타워", "1. **남산 타워** :"
+    const titleMatch = trimmedLine.match(/^\d+\.\s+(?:\*\*)?([^*\n]+)(?:\*\*)?/);
+    
+    if (titleMatch) {
+      if (currentPlace) places.push(currentPlace);
+      // 제목 뒤에 불필요한 콜론(:) 등이 붙을 경우 제거
+      const name = titleMatch[1].replace(/[:：].*$/, "").trim();
+      currentPlace = { name: name, location: "" };
+    } 
+    // 2. "위치" 또는 "주소" 라는 단어가 포함된 줄을 찾음
+    else if (currentPlace && (trimmedLine.includes("위치") || trimmedLine.includes("주소"))) {
+      // "위치:", "위치 :", "**위치**:" 등 다양한 패턴 제거 후 주소만 추출
+      const location = trimmedLine.replace(/.*(위치|주소)\s*[:：]?\s*/, "").replace(/\*\*/g, "").trim();
+      if (location) {
+        currentPlace.location = location;
+      }
+    }
+  });
+
+  if (currentPlace) places.push(currentPlace);
+  
+  // 주소 정보가 없는 항목은 지도에 표시할 수 없으므로 필터링 (선택 사항)
+  return places.filter(p => p.name && p.location);
+};
+
+// --- 네이버 지도 컴포넌트 (최종 수정) ---
+const NaverMapComponent = ({ places }) => {
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    // 1. 스크립트 ID를 변경하여 캐시 문제 해결 (중요!)
+    const SCRIPT_ID = "naver-map-script-v3-geocoder"; 
+    const CLIENT_ID = import.meta.env.VITE_NAVER_MAP_CLIENT_KEY;
+
+    // 이미 올바른 스크립트가 로드되어 있다면 바로 초기화
+    if (document.getElementById(SCRIPT_ID)) {
+       if (window.naver?.maps?.Service) {
+         initMap();
+       }
+       return;
+    }
+
+    // 기존에 잘못 로드된 다른 네이버 맵 스크립트가 있다면 제거 (충돌 방지)
+    const oldScript = document.getElementById("naver-map-script");
+    if (oldScript) oldScript.remove();
+
+    const script = document.createElement("script");
+    script.id = SCRIPT_ID;
+    // submodules=geocoder가 반드시 포함되어야 함
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}&submodules=geocoder`;
+    script.async = true;
+
+    script.onload = () => {
+      // 로드 완료 후 Service 객체가 있는지 확인
+      if (window.naver?.maps?.Service) {
+        initMap();
+      } else {
+        console.error("네이버 지도 로드 완료되었으나 Geocoder 서브모듈이 없습니다.");
+      }
+    };
+
+    script.onerror = () => console.error("네이버 지도 스크립트 로드 실패");
+    document.head.appendChild(script);
+  }, [places]);
+
+  const initMap = () => {
+    // 안전 장치: Service 객체가 없으면 실행하지 않음
+    if (!window.naver?.maps?.Service || !mapRef.current) return;
+
+    const map = new window.naver.maps.Map(mapRef.current, {
+      center: new window.naver.maps.LatLng(37.5665, 126.9780),
+      zoom: 7, // 줌 레벨을 조금 넓게 잡음
+    });
+
+    if (!places || places.length === 0) return;
+
+    let isCenterSet = false;
+
+    places.forEach((place) => {
+      if (!place.location) return;
+
+      // 주소 정제: 괄호 안의 설명이 검색을 방해할 수 있으므로 제거 (예: " ... (강릉과 가까움)" 제거)
+      const cleanAddress = place.location.replace(/\(.*\)/g, "").trim();
+
+      window.naver.maps.Service.geocode(
+        { query: cleanAddress },
+        (status, response) => {
+          if (status !== window.naver.maps.Service.Status.OK) {
+            console.warn(`주소 검색 실패: ${cleanAddress}`);
+            return;
+          }
+
+          const result = response.v2?.addresses?.[0];
+          if (!result) return;
+
+          const position = new window.naver.maps.LatLng(result.y, result.x);
+
+          new window.naver.maps.Marker({
+            position: position,
+            map: map,
+            title: place.name,
+          });
+
+          if (!isCenterSet) {
+            map.setCenter(position);
+            map.setZoom(10);
+            isCenterSet = true;
+          }
+        }
+      );
+    });
+  };
+
+  return (
+    <Box
+      ref={mapRef}
+      sx={{
+        width: "100%",
+        height: "400px",
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        mt: 2,
+        backgroundColor: "#f0f0f0" // 지도가 로딩되기 전 회색 배경 표시
+      }}
+    />
+  );
+};
 
 const DetailPage = () => {
-  // 4. URL의 :id 값을 가져옵니다. (예: "기생충")
   const { id } = useParams();
-
-  // (신규) AI 추천 코스를 저장할 state
   const [recommendation, setRecommendation] = useState(null);
-  const [loading, setLoading] = useState(true); // 로딩 상태
-  const [error, setError] = useState(null); // 오류 상태
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // 5. 전체 데이터(allContent)에서 id(예: "기생충")와
-  //    search_title이 일치하는 항목(item)을 찾습니다.
   const item = allContent.find((c) => c.search_title === id);
 
-  // --- (신규) AI 서버에서 추천 코스를 가져오는 로직 ---
   useEffect(() => {
-    // 항목(item)을 찾지 못했거나 id가 없으면 AI 호출을 중지합니다.
     if (!id || !item) {
-      setLoading(false); // 기본 정보도 없으므로 로딩 중지
+      setLoading(false);
       return;
     }
 
-    // AI 서버에 특정 제목에 대한 추천을 요청합니다.
     const fetchRecommendation = async () => {
       setLoading(true);
       setError(null);
       try {
-        // AI 서버 (Python)의 엔드포인트를 호출합니다.
-        // Docker 환경에서는 React(app)가 AI(ai)를 'http://ai:5000'로 호출할 수 있지만,
-        // 개발 환경(localhost)에서는 'http://localhost:5000'로 호출합니다.
-        // Docker Compose에서 React 앱이 3000번, AI가 5000번으로 열려있다고 가정합니다.
-        
-        // (주의) URL 인코딩: '선재 업고 튀어' -> '선재%20업고%20튀어'
         const encodedTitle = encodeURIComponent(id);
         const response = await fetch(`http://localhost:5000/recommend/${encodedTitle}`);
 
@@ -141,7 +255,7 @@ const DetailPage = () => {
           throw new Error(errData.detail || `AI 서버 오류: ${response.statusText}`);
         }
 
-        const data = await response.json(); // { title: "...", recommendation: "..." }
+        const data = await response.json();
         setRecommendation(data.recommendation);
       } catch (err) {
         console.error("AI 추천 코스 로딩 실패:", err);
@@ -152,9 +266,8 @@ const DetailPage = () => {
     };
 
     fetchRecommendation();
-  }, [id, item]); // id 또는 item이 변경될 때마다 다시 호출
+  }, [id, item]);
 
-  // 6. 항목을 찾지 못한 경우 (메시지 수정)
   if (!item) {
     return (
       <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
@@ -171,21 +284,20 @@ const DetailPage = () => {
     );
   }
 
-  // 7. 항목을 찾은 경우, 상세 정보를 렌더링합니다.
+  const places = recommendation ? parsePlacesFromMarkdown(recommendation) : [];
+
   return (
     <Container maxWidth="lg" sx={{ pt: 3, pb: 6 }}>
-      {/* --- 기본 콘텐츠 정보 (상단) --- */}
       <Box
         sx={{
           display: "flex",
           gap: { xs: 2, md: 4 },
-          flexDirection: { xs: "column", md: "row" }, // 모바일에선 세로, 데스크탑에선 가로
-          pb: 4, // 하단 AI 추천과 간격
-          borderBottom: "1px solid", // 구분선
+          flexDirection: { xs: "column", md: "row" },
+          pb: 4,
+          borderBottom: "1px solid",
           borderColor: "divider"
         }}
       >
-        {/* 포스터 이미지 */}
         <Box
           component="img"
           src={item.poster_url}
@@ -202,7 +314,6 @@ const DetailPage = () => {
           }}
         />
 
-        {/* 상세 정보 */}
         <Box sx={{ flex: 1 }}>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
             {item.title}
@@ -237,13 +348,11 @@ const DetailPage = () => {
         </Box>
       </Box>
 
-      {/* --- (신규) AI 추천 코스 섹션 (하단) --- */}
       <Box sx={{ pt: 4 }}>
         <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 2 }}>
           AI 추천 여행 코스
         </Typography>
         
-        {/* 로딩 중일 때 */}
         {loading && (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
             <Box textAlign="center">
@@ -253,22 +362,22 @@ const DetailPage = () => {
           </Box>
         )}
         
-        {/* 오류 발생 시 */}
         {error && (
            <Alert severity="error">
              오류가 발생했습니다: {error}
            </Alert>
          )}
          
-        {/* 성공 시 (로딩X, 오류X, recommendation 있음) */}
         {!loading && !error && recommendation && (
-          <Paper variant="outlined" sx={{ p: { xs: 2, md: 4 } }}>
-            <MarkdownViewer content={recommendation} />
-          </Paper>
+          <>
+            <Paper variant="outlined" sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
+              <MarkdownViewer content={recommendation} />
+            </Paper>
+            <NaverMapComponent places={places} />
+          </>
         )}
       </Box>
 
-      {/* 홈으로 돌아가기 버튼 */}
       <Button
         component={RouterLink}
         to="/"
