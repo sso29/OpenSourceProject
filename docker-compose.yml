@@ -29,6 +29,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: open1234
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       TZ: Asia/Seoul
+      NAVER_MAP_CLIENT_ID: ${NAVER_MAP_CLIENT_ID}
+      NAVER_MAP_CLIENT_SECRET: ${NAVER_MAP_CLIENT_SECRET}
     depends_on:
       - db
       - ai
@@ -39,7 +41,7 @@ services:
       dockerfile: Dockerfile
     container_name: opensource_ai
     ports:
-      - "5000:5000"
+      - "5001:5000"
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       TZ: Asia/Seoul

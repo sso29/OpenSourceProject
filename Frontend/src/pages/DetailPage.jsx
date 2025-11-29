@@ -129,6 +129,9 @@ const parsePlacesFromMarkdown = (md) => {
 const NaverMapComponent = ({ places }) => {
   const mapRef = useRef(null);
 
+  const DIRECTIONS_BASE =
+    import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:8080";
+
   useEffect(() => {
     // 1. 스크립트 ID를 변경하여 캐시 문제 해결 (중요!)
     const SCRIPT_ID = "naver-map-script-v3-geocoder"; 
@@ -149,11 +152,13 @@ const NaverMapComponent = ({ places }) => {
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
     // submodules=geocoder가 반드시 포함되어야 함
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}&submodules=geocoder`;
+    // callback으로 서브모듈 로드 완료 시점 보장
+    // 일부 키는 ncpKeyId 파라미터로 동작하므로 ncpKeyId를 사용
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}&submodules=geocoder&callback=__naverMapInit`;
     script.async = true;
 
-    script.onload = () => {
-      // 로드 완료 후 Service 객체가 있는지 확인
+    // 스크립트 내부 모듈까지 모두 로드된 뒤 실행
+    window.__naverMapInit = () => {
       if (window.naver?.maps?.Service) {
         initMap();
       } else {
@@ -165,7 +170,7 @@ const NaverMapComponent = ({ places }) => {
     document.head.appendChild(script);
   }, [places]);
 
-  const initMap = () => {
+  const initMap = async () => {
     // 안전 장치: Service 객체가 없으면 실행하지 않음
     if (!window.naver?.maps?.Service || !mapRef.current) return;
 
@@ -177,40 +182,89 @@ const NaverMapComponent = ({ places }) => {
     if (!places || places.length === 0) return;
 
     let isCenterSet = false;
+    const pathCoords = [];
 
-    places.forEach((place) => {
-      if (!place.location) return;
+    for (const place of places) {
+      if (!place.location) continue;
 
       // 주소 정제: 괄호 안의 설명이 검색을 방해할 수 있으므로 제거 (예: " ... (강릉과 가까움)" 제거)
       const cleanAddress = place.location.replace(/\(.*\)/g, "").trim();
 
-      window.naver.maps.Service.geocode(
-        { query: cleanAddress },
-        (status, response) => {
-          if (status !== window.naver.maps.Service.Status.OK) {
-            console.warn(`주소 검색 실패: ${cleanAddress}`);
-            return;
+      // 비동기 geocode 순차 처리
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((resolve) => {
+        window.naver.maps.Service.geocode(
+          { query: cleanAddress },
+          (status, response) => {
+            if (status !== window.naver.maps.Service.Status.OK) {
+              console.warn(`주소 검색 실패: ${cleanAddress}`);
+              resolve();
+              return;
+            }
+
+            const result = response.v2?.addresses?.[0];
+            if (!result) {
+              resolve();
+              return;
+            }
+
+            const position = new window.naver.maps.LatLng(result.y, result.x);
+
+            new window.naver.maps.Marker({
+              position: position,
+              map: map,
+              title: place.name,
+            });
+
+            pathCoords.push(position);
+
+            if (!isCenterSet) {
+              map.setCenter(position);
+              map.setZoom(10);
+              isCenterSet = true;
+            }
+            resolve();
           }
+        );
+      });
+    }
 
-          const result = response.v2?.addresses?.[0];
-          if (!result) return;
+    // 네이버 길찾기 API로 실제 경로 호출 (좌표 2개 이상일 때)
+    if (pathCoords.length >= 2) {
+      const routePath = [];
+      for (let i = 0; i < pathCoords.length - 1; i++) {
+        const start = pathCoords[i];
+        const end = pathCoords[i + 1];
+        const query = `${DIRECTIONS_BASE}/api/directions?startLat=${start.lat()}&startLng=${start.lng()}&endLat=${end.lat()}&endLng=${end.lng()}`;
 
-          const position = new window.naver.maps.LatLng(result.y, result.x);
-
-          new window.naver.maps.Marker({
-            position: position,
-            map: map,
-            title: place.name,
+        // eslint-disable-next-line no-await-in-loop
+        await fetch(query)
+          .then((res) => {
+            if (!res.ok) throw new Error(`directions API 오류: ${res.status}`);
+            return res.json();
+          })
+          .then((data) => {
+            const path = data?.route?.trafast?.[0]?.path;
+            if (!path) return;
+            path.forEach(([lng, lat]) => {
+              routePath.push(new window.naver.maps.LatLng(lat, lng));
+            });
+          })
+          .catch((err) => {
+            console.warn("길찾기 경로 호출 실패:", err);
           });
+      }
 
-          if (!isCenterSet) {
-            map.setCenter(position);
-            map.setZoom(10);
-            isCenterSet = true;
-          }
-        }
-      );
-    });
+      if (routePath.length >= 2) {
+        new window.naver.maps.Polyline({
+          map,
+          path: routePath,
+          strokeColor: "#2563eb",
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+        });
+      }
+    }
   };
 
   return (
@@ -248,7 +302,7 @@ const DetailPage = () => {
       setError(null);
       try {
         const encodedTitle = encodeURIComponent(id);
-        const response = await fetch(`http://localhost:5000/recommend/${encodedTitle}`);
+        const response = await fetch(`http://localhost:5001/recommend/${encodedTitle}`);
 
         if (!response.ok) {
           const errData = await response.json();
