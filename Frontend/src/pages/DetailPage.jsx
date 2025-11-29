@@ -10,6 +10,9 @@ import {
   CircularProgress,
   Paper,
   Alert,
+  Card, 
+  CardContent,
+  Divider
 } from "@mui/material";
 
 import allContent from "../data/contentsExample.json";
@@ -125,9 +128,14 @@ const parsePlacesFromMarkdown = (md) => {
   return places.filter(p => p.name && p.location);
 };
 
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import MapIcon from '@mui/icons-material/Map';
+
 // --- 네이버 지도 컴포넌트 (최종 수정) ---
 const NaverMapComponent = ({ places }) => {
   const mapRef = useRef(null);
+  const [routeInfos, setRouteInfos] = useState([]);   // 구간별 정보 저장 (거리, 시간)
+  const [totalTime, setTotalTime] = useState(0);      // 총 소요 시간 (자동차)
 
   const DIRECTIONS_BASE =
     import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:8080";
@@ -174,15 +182,19 @@ const NaverMapComponent = ({ places }) => {
     // 안전 장치: Service 객체가 없으면 실행하지 않음
     if (!window.naver?.maps?.Service || !mapRef.current) return;
 
+    const newRouteInfos = [];
+    let calculatedTotalTime = 0;
+    const pathCoords = [];
+    const totalPathForPolyline = [];
+
     const map = new window.naver.maps.Map(mapRef.current, {
       center: new window.naver.maps.LatLng(37.5665, 126.9780),
-      zoom: 7, // 줌 레벨을 조금 넓게 잡음
+      zoom: 10, // 줌 레벨을 조금 넓게 잡음
     });
 
     if (!places || places.length === 0) return;
 
     let isCenterSet = false;
-    const pathCoords = [];
 
     for (const place of places) {
       if (!place.location) continue;
@@ -210,11 +222,27 @@ const NaverMapComponent = ({ places }) => {
 
             const position = new window.naver.maps.LatLng(result.y, result.x);
 
-            new window.naver.maps.Marker({
+            const marker = new window.naver.maps.Marker({
               position: position,
               map: map,
               title: place.name,
+              // 마커에 순서 표시
+              icon: {
+                content: `<div style="background:#2563eb; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${pathCoords.length + 1}</div>`,
+                anchor: new window.naver.maps.Point(12, 12)
+              }
             });
+
+            // 정보창 추가 - 마우스 오버 시 장소명 표시
+            const infoWindow = new window.naver.maps.InfoWindow({
+              content: `<div style="padding:5px 10px; font-size:12px; font-weight:bold;">${place.name}</div>`,
+              borderWidth: 1,
+              disableAnchor: true,
+              backgroundColor: "white",
+            });
+
+            window.naver.maps.Event.addListener(marker, "mouseover", () => infoWindow.open(map, marker));
+            window.naver.maps.Event.addListener(marker, "mouseout", () => infoWindow.close());
 
             pathCoords.push(position);
 
@@ -231,55 +259,159 @@ const NaverMapComponent = ({ places }) => {
 
     // 네이버 길찾기 API로 실제 경로 호출 (좌표 2개 이상일 때)
     if (pathCoords.length >= 2) {
-      const routePath = [];
+
+      // 구간별 루프
       for (let i = 0; i < pathCoords.length - 1; i++) {
         const start = pathCoords[i];
         const end = pathCoords[i + 1];
         const query = `${DIRECTIONS_BASE}/api/directions?startLat=${start.lat()}&startLng=${start.lng()}&endLat=${end.lat()}&endLng=${end.lng()}`;
 
         // eslint-disable-next-line no-await-in-loop
-        await fetch(query)
-          .then((res) => {
-            if (!res.ok) throw new Error(`directions API 오류: ${res.status}`);
-            return res.json();
-          })
-          .then((data) => {
-            const path = data?.route?.trafast?.[0]?.path;
-            if (!path) return;
-            path.forEach(([lng, lat]) => {
-              routePath.push(new window.naver.maps.LatLng(lat, lng));
-            });
-          })
-          .catch((err) => {
-            console.warn("길찾기 경로 호출 실패:", err);
-          });
+        // await fetch(query)
+        //   .then((res) => {
+        //     if (!res.ok) throw new Error(`directions API 오류: ${res.status}`);
+        //     return res.json();
+        //   })
+        //   .then((data) => {
+        //     const path = data?.route?.trafast?.[0]?.path;
+        //     if (!path) return;
+        //     path.forEach(([lng, lat]) => {
+        //       routePath.push(new window.naver.maps.LatLng(lat, lng));
+        //     });
+        //   })
+        //   .catch((err) => {
+        //     console.warn("길찾기 경로 호출 실패:", err);
+        //   });
+        try {
+          const res = await fetch(query);
+          if (res.ok) {
+            const data = await res.json();
+            const trafast = data?.route?.trafast?.[0];
+
+            if (trafast) {
+              // 지도에 그릴 선 데이터 수집
+              trafast.path.forEach(([lng, lat]) => {
+                totalPathForPolyline.push(new window.naver.maps.LatLng(lat, lng));
+              });
+
+              // 텍스트로 보여줄 정보 수집 (거리, 시간)
+              const durationMin = Math.round(trafast.summary.duration/60000); // 분 단위
+              const distanceKm = (trafast.summary.distance/1000).toFixed(1);  // km 단위
+
+              newRouteInfos.push({
+                startName: places[i].name,
+                endName: places[i + 1].name,
+                time: durationMin,
+                distance: distanceKm,
+                startLat: start.lat(), startLng: start.lng(),
+                endLat: end.lat(), endLng: end.lng()
+              });
+
+              calculatedTotalTime += durationMin;
+            }
+          }
+        } catch (err) {
+          console.warn("경로 API 호출 실패: ", err);
+        }
       }
 
-      if (routePath.length >= 2) {
+      // 지도에 선 그리기
+      if (totalPathForPolyline.length > 0) {
         new window.naver.maps.Polyline({
           map,
-          path: routePath,
+          path: totalPathForPolyline,
           strokeColor: "#2563eb",
           strokeOpacity: 0.8,
-          strokeWeight: 4,
+          strokeweight: 5,
         });
+
+        // 모든 경로가 보이도록 줌 레벨 자동 조절
+        const bounds = new window.naver.maps.LatLngBounds();
+        totalPathForPolyline.forEach(coord => bounds.extend(coord));
+        map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
       }
+
+      setRouteInfos(newRouteInfos);
+      setTotalTime(calculatedTotalTime);
+
+      // if (routePath.length >= 2) {
+      //   new window.naver.maps.Polyline({
+      //     map,
+      //     path: routePath,
+      //     strokeColor: "#2563eb",
+      //     strokeOpacity: 0.8,
+      //     strokeWeight: 4,
+      //   });
+      // }
     }
   };
 
+  const openPublicTransport = (info) => {
+    const url = `https://map.naver.com/index.nhn?slng=${info.startLng}&slat=${info.startLat}&stext=${encodeURIComponent(info.startName)}&elng=${info.endLng}&elat=${info.endLat}&etext=${encodeURIComponent(info.endName)}&menu=route&pathType=1`;
+    window.open(url, "_blank");
+  };
+
   return (
-    <Box
-      ref={mapRef}
-      sx={{
-        width: "100%",
-        height: "400px",
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        mt: 2,
-        backgroundColor: "#f0f0f0" // 지도가 로딩되기 전 회색 배경 표시
-      }}
-    />
+    <Box sx={{ width: "100%", mt: 2 }}>
+      {/* 지도 영역 */}
+      <Box
+        ref={mapRef}
+        sx={{
+          width: "100%",
+          height: "400px",
+          borderRadius: 2,
+          border: "1px solid",
+          borderColor: "divider",
+          backgroundColor: "#f0f0f0",
+          mb: 3
+        }}
+      />
+
+      {/* 경로 상세 정보 리스트 */}
+      {routeInfos.length > 0 && (
+        <Box>
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+             🚗 추천 경로 요약 (총 이동 약 {Math.floor(totalTime / 60) > 0 ? `${Math.floor(totalTime / 60)}시간 ` : ''}{totalTime % 60}분)
+          </Typography>
+          
+          <Stack spacing={2}>
+            {routeInfos.map((info, idx) => (
+              <Card key={idx} variant="outlined" sx={{ backgroundColor: '#f9fafb' }}>
+                <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" spacing={2}>
+                    
+                    {/* 왼쪽: 구간 및 자동차 정보 */}
+                    <Box>
+                      <Typography variant="subtitle1" fontWeight="bold">
+                        {idx + 1}. {info.startName} ➝ {info.endName}
+                      </Typography>
+                      <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5, color: 'text.secondary' }}>
+                        <DirectionsCarIcon fontSize="small" />
+                        <Typography variant="body2">
+                          자동차 이동: 약 {info.time}분 ({info.distance}km)
+                        </Typography>
+                      </Stack>
+                    </Box>
+
+                    {/* 오른쪽: 대중교통 버튼 */}
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      startIcon={<MapIcon />}
+                      onClick={() => openPublicTransport(info)}
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      대중교통 / 상세 경로 보기
+                    </Button>
+
+                  </Stack>
+                </CardContent>
+              </Card>
+            ))}
+          </Stack>
+        </Box>
+      )}
+    </Box>
   );
 };
 
