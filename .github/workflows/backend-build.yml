@@ -5,9 +5,9 @@ name: Backend Build & Test
 
 on:
   push:
-    branchs: ["release"]
+    branches: ["release"]
   pull_request:
-    branchs: ["release"]
+    branches: ["release"]
 
 jobs:
   build:
