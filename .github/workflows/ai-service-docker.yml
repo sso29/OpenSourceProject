@@ -1,0 +1,19 @@
+# ai_service/Dockerfile 사용
+# Python 서비스 도커 이미지 빌드
+
+name: AI Service Docker Build
+
+on:
+  push:
+    branches: ["release"]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build AI Service Docker Image
+        run: docker build -t opensource-ai-service:latest ./ai_service

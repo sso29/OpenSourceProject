@@ -1,0 +1,19 @@
+# 루트 Dockerfile 사용
+# 백엔드 + MySQL 연동 테스트 가능
+
+name: Backend Docker Build
+
+on:
+  push:
+    branches: ["release"]
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Backend Docker Image
+        run: docker build -t opensource-backend:latest .

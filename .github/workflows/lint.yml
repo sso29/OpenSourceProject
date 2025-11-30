@@ -1,0 +1,30 @@
+# Backend: Gradle checkstyle
+# Frontend: ESLint 검사
+
+name: Lint Check
+
+on:
+  push:
+    branches: ["release"]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Backend Checkstyle
+        run: ./gradlew checkstyleMain || true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Frontend ESLint
+        run: |
+          cd Frontend
+          npm install
+          npx eslint src || true

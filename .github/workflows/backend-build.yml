@@ -1,0 +1,30 @@
+# src/ 기준으로 Java 빌드 + 테스트
+# Gradle/Maven 빌드
+
+name: Backend Build & Test
+
+on:
+  push:
+    branchs: ["release"]
+  pull_request:
+    branchs: ["release"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Build with Gradle
+        run: ./gradlew build -x Test
+
+      - name: Run Tests
+        run: ./gradlew test 
