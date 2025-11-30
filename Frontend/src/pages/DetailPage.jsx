@@ -30,7 +30,7 @@ const MarkdownViewer = ({ content }) => {
       {lines.map((line, index) => {
         line = line.trim();
 
-        if (line.startsWith("## ")) {
+        if (line.startsWith("##")) {
           return (
             <Typography
               key={index}
@@ -104,20 +104,30 @@ const parsePlacesFromMarkdown = (md) => {
 
     // 1. 숫자 + 점(.) 으로 시작하는 줄을 장소 이름으로 인식 (볼드 여부 상관없이)
     // 예: "1. **남산 타워**", "1. 남산 타워", "1. **남산 타워** :"
-    const titleMatch = trimmedLine.match(/^\d+\.\s+(?:\*\*)?([^*\n]+)(?:\*\*)?/);
+    const titleMatch = trimmedLine.match(/^(?:#+\s*)?(\d+)[.)]\s+(.*)$/);
     
     if (titleMatch) {
       if (currentPlace) places.push(currentPlace);
       // 제목 뒤에 불필요한 콜론(:) 등이 붙을 경우 제거
-      const name = titleMatch[1].replace(/[:：].*$/, "").trim();
+      let name = titleMatch[2].replace(/\*\*/g, "").replace(/[:：].*$/, "").trim();
       currentPlace = { name: name, location: "" };
     } 
     // 2. "위치" 또는 "주소" 라는 단어가 포함된 줄을 찾음
     else if (currentPlace && (trimmedLine.includes("위치") || trimmedLine.includes("주소"))) {
-      // "위치:", "위치 :", "**위치**:" 등 다양한 패턴 제거 후 주소만 추출
-      const location = trimmedLine.replace(/.*(위치|주소)\s*[:：]?\s*/, "").replace(/\*\*/g, "").trim();
-      if (location) {
-        currentPlace.location = location;
+      // '위치:' 같은 앞부분 제거
+      let rawLocation = trimmedLine.replace(/.*(위치|주소)\s*[:：]?\s*/, "");
+      
+      // [중요] 마크다운 링크, 볼드, 괄호 내용 등을 모두 제거하여 '순수 주소'만 남김
+      // 예: "서울시 강남구 [지도보기]" -> "서울시 강남구"
+      let cleanLocation = rawLocation
+        .replace(/\*\*/g, "")          // 볼드 제거
+        .replace(/\[.*?\]/g, "")       // 대괄호와 그 안의 내용 제거 (마크다운 링크 등)
+        .replace(/\(.*\)/g, "")        // 괄호와 그 안의 내용 제거 (부연 설명)
+        .replace(/[<>]/g, "")          // 꺽쇠 괄호 제거
+        .trim();
+
+      if (cleanLocation) {
+        currentPlace.location = cleanLocation;
       }
     }
   });
@@ -132,6 +142,7 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import MapIcon from '@mui/icons-material/Map';
 
 // --- 네이버 지도 컴포넌트 (최종 수정) ---
+// --- 네이버 지도 컴포넌트 (수정됨) ---
 const NaverMapComponent = ({ places }) => {
   const mapRef = useRef(null);
   const [routeInfos, setRouteInfos] = useState([]);   // 구간별 정보 저장 (거리, 시간)
@@ -141,11 +152,10 @@ const NaverMapComponent = ({ places }) => {
     import.meta.env.VITE_BACKEND_BASE_URL || "http://localhost:8080";
 
   useEffect(() => {
-    // 1. 스크립트 ID를 변경하여 캐시 문제 해결 (중요!)
+    // 1. 스크립트 ID를 변경하여 캐시 문제 해결
     const SCRIPT_ID = "naver-map-script-v3-geocoder"; 
     const CLIENT_ID = import.meta.env.VITE_NAVER_MAP_CLIENT_KEY;
 
-    // 이미 올바른 스크립트가 로드되어 있다면 바로 초기화
     if (document.getElementById(SCRIPT_ID)) {
        if (window.naver?.maps?.Service) {
          initMap();
@@ -153,19 +163,14 @@ const NaverMapComponent = ({ places }) => {
        return;
     }
 
-    // 기존에 잘못 로드된 다른 네이버 맵 스크립트가 있다면 제거 (충돌 방지)
     const oldScript = document.getElementById("naver-map-script");
     if (oldScript) oldScript.remove();
 
     const script = document.createElement("script");
     script.id = SCRIPT_ID;
-    // submodules=geocoder가 반드시 포함되어야 함
-    // callback으로 서브모듈 로드 완료 시점 보장
-    // 일부 키는 ncpKeyId 파라미터로 동작하므로 ncpKeyId를 사용
     script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${CLIENT_ID}&submodules=geocoder&callback=__naverMapInit`;
     script.async = true;
 
-    // 스크립트 내부 모듈까지 모두 로드된 뒤 실행
     window.__naverMapInit = () => {
       if (window.naver?.maps?.Service) {
         initMap();
@@ -179,61 +184,69 @@ const NaverMapComponent = ({ places }) => {
   }, [places]);
 
   const initMap = async () => {
-    // 안전 장치: Service 객체가 없으면 실행하지 않음
     if (!window.naver?.maps?.Service || !mapRef.current) return;
 
     const newRouteInfos = [];
     let calculatedTotalTime = 0;
-    const pathCoords = [];
+    
+    // [변경] 좌표 변환에 성공한 장소들의 정보(이름, 좌표)를 담을 배열
+    const validPlaces = []; 
     const totalPathForPolyline = [];
 
     const map = new window.naver.maps.Map(mapRef.current, {
       center: new window.naver.maps.LatLng(37.5665, 126.9780),
-      zoom: 10, // 줌 레벨을 조금 넓게 잡음
+      zoom: 10,
     });
 
     if (!places || places.length === 0) return;
 
     let isCenterSet = false;
 
+    // 1. 모든 장소를 순회하며 좌표 변환 시도
     for (const place of places) {
       if (!place.location) continue;
 
-      // 주소 정제: 괄호 안의 설명이 검색을 방해할 수 있으므로 제거 (예: " ... (강릉과 가까움)" 제거)
-      const cleanAddress = place.location.replace(/\(.*\)/g, "").trim();
+      const cleanAddress = place.location.replace(/\(.*?\)/g, "").trim();
 
       // 비동기 geocode 순차 처리
-      // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve) => {
         window.naver.maps.Service.geocode(
           { query: cleanAddress },
           (status, response) => {
+            // 실패 시 그냥 resolve() 하여 다음 장소로 넘어감 (validPlaces에 추가 안됨)
             if (status !== window.naver.maps.Service.Status.OK) {
-              console.warn(`주소 검색 실패: ${cleanAddress}`);
+              console.warn(`주소 검색 실패 (경로 제외): ${place.name} - ${cleanAddress}`);
               resolve();
               return;
             }
 
             const result = response.v2?.addresses?.[0];
             if (!result) {
+              console.warn(`결과 없음 (경로 제외): ${place.name}`);
               resolve();
               return;
             }
 
+            console.log(`✅ 좌표 변환 성공: ${place.name}`);
             const position = new window.naver.maps.LatLng(result.y, result.x);
 
+            // [중요] 성공한 장소만 리스트에 추가
+            validPlaces.push({
+              name: place.name,
+              position: position
+            });
+
+            // 마커 생성 (순서는 validPlaces의 길이 기준)
             const marker = new window.naver.maps.Marker({
               position: position,
               map: map,
               title: place.name,
-              // 마커에 순서 표시
               icon: {
-                content: `<div style="background:#2563eb; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${pathCoords.length + 1}</div>`,
+                content: `<div style="background:#2563eb; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${validPlaces.length}</div>`,
                 anchor: new window.naver.maps.Point(12, 12)
               }
             });
 
-            // 정보창 추가 - 마우스 오버 시 장소명 표시
             const infoWindow = new window.naver.maps.InfoWindow({
               content: `<div style="padding:5px 10px; font-size:12px; font-weight:bold;">${place.name}</div>`,
               borderWidth: 1,
@@ -243,8 +256,6 @@ const NaverMapComponent = ({ places }) => {
 
             window.naver.maps.Event.addListener(marker, "mouseover", () => infoWindow.open(map, marker));
             window.naver.maps.Event.addListener(marker, "mouseout", () => infoWindow.close());
-
-            pathCoords.push(position);
 
             if (!isCenterSet) {
               map.setCenter(position);
@@ -257,31 +268,15 @@ const NaverMapComponent = ({ places }) => {
       });
     }
 
-    // 네이버 길찾기 API로 실제 경로 호출 (좌표 2개 이상일 때)
-    if (pathCoords.length >= 2) {
+    // 2. 유효한 장소(validPlaces)가 2개 이상일 때만 경로 계산
+    if (validPlaces.length >= 2) {
+      for (let i = 0; i < validPlaces.length - 1; i++) {
+        const start = validPlaces[i];
+        const end = validPlaces[i + 1];
 
-      // 구간별 루프
-      for (let i = 0; i < pathCoords.length - 1; i++) {
-        const start = pathCoords[i];
-        const end = pathCoords[i + 1];
-        const query = `${DIRECTIONS_BASE}/api/directions?startLat=${start.lat()}&startLng=${start.lng()}&endLat=${end.lat()}&endLng=${end.lng()}`;
-
-        // eslint-disable-next-line no-await-in-loop
-        // await fetch(query)
-        //   .then((res) => {
-        //     if (!res.ok) throw new Error(`directions API 오류: ${res.status}`);
-        //     return res.json();
-        //   })
-        //   .then((data) => {
-        //     const path = data?.route?.trafast?.[0]?.path;
-        //     if (!path) return;
-        //     path.forEach(([lng, lat]) => {
-        //       routePath.push(new window.naver.maps.LatLng(lat, lng));
-        //     });
-        //   })
-        //   .catch((err) => {
-        //     console.warn("길찾기 경로 호출 실패:", err);
-        //   });
+        // API 호출
+        const query = `${DIRECTIONS_BASE}/api/directions?startLat=${start.position.lat()}&startLng=${start.position.lng()}&endLat=${end.position.lat()}&endLng=${end.position.lng()}`;
+        
         try {
           const res = await fetch(query);
           if (res.ok) {
@@ -289,22 +284,22 @@ const NaverMapComponent = ({ places }) => {
             const trafast = data?.route?.trafast?.[0];
 
             if (trafast) {
-              // 지도에 그릴 선 데이터 수집
+              // 폴리라인 경로 추가
               trafast.path.forEach(([lng, lat]) => {
                 totalPathForPolyline.push(new window.naver.maps.LatLng(lat, lng));
               });
 
-              // 텍스트로 보여줄 정보 수집 (거리, 시간)
-              const durationMin = Math.round(trafast.summary.duration/60000); // 분 단위
-              const distanceKm = (trafast.summary.distance/1000).toFixed(1);  // km 단위
+              const durationMin = Math.round(trafast.summary.duration/60000);
+              const distanceKm = (trafast.summary.distance/1000).toFixed(1);
 
+              // [중요] 리스트 정보 생성 시 validPlaces의 이름을 직접 사용
               newRouteInfos.push({
-                startName: places[i].name,
-                endName: places[i + 1].name,
+                startName: start.name,
+                endName: end.name,
                 time: durationMin,
                 distance: distanceKm,
-                startLat: start.lat(), startLng: start.lng(),
-                endLat: end.lat(), endLng: end.lng()
+                startLat: start.position.lat(), startLng: start.position.lng(),
+                endLat: end.position.lat(), endLng: end.position.lng()
               });
 
               calculatedTotalTime += durationMin;
@@ -315,35 +310,24 @@ const NaverMapComponent = ({ places }) => {
         }
       }
 
-      // 지도에 선 그리기
+      // 지도에 경로 그리기
       if (totalPathForPolyline.length > 0) {
         new window.naver.maps.Polyline({
           map,
           path: totalPathForPolyline,
           strokeColor: "#2563eb",
           strokeOpacity: 0.8,
-          strokeweight: 5,
+          strokeWeight: 5,
         });
 
-        // 모든 경로가 보이도록 줌 레벨 자동 조절
         const bounds = new window.naver.maps.LatLngBounds();
         totalPathForPolyline.forEach(coord => bounds.extend(coord));
         map.fitBounds(bounds, { top: 50, bottom: 50, left: 50, right: 50 });
       }
-
-      setRouteInfos(newRouteInfos);
-      setTotalTime(calculatedTotalTime);
-
-      // if (routePath.length >= 2) {
-      //   new window.naver.maps.Polyline({
-      //     map,
-      //     path: routePath,
-      //     strokeColor: "#2563eb",
-      //     strokeOpacity: 0.8,
-      //     strokeWeight: 4,
-      //   });
-      // }
     }
+
+    setRouteInfos(newRouteInfos);
+    setTotalTime(calculatedTotalTime);
   };
 
   const openPublicTransport = (info) => {
@@ -353,7 +337,6 @@ const NaverMapComponent = ({ places }) => {
 
   return (
     <Box sx={{ width: "100%", mt: 2 }}>
-      {/* 지도 영역 */}
       <Box
         ref={mapRef}
         sx={{
@@ -367,11 +350,10 @@ const NaverMapComponent = ({ places }) => {
         }}
       />
 
-      {/* 경로 상세 정보 리스트 */}
       {routeInfos.length > 0 && (
         <Box>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-             🚗 추천 경로 요약 (총 이동 약 {Math.floor(totalTime / 60) > 0 ? `${Math.floor(totalTime / 60)}시간 ` : ''}{totalTime % 60}분)
+              🚗 추천 경로 요약 (총 이동 약 {Math.floor(totalTime / 60) > 0 ? `${Math.floor(totalTime / 60)}시간 ` : ''}{totalTime % 60}분)
           </Typography>
           
           <Stack spacing={2}>
@@ -379,8 +361,6 @@ const NaverMapComponent = ({ places }) => {
               <Card key={idx} variant="outlined" sx={{ backgroundColor: '#f9fafb' }}>
                 <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
                   <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" spacing={2}>
-                    
-                    {/* 왼쪽: 구간 및 자동차 정보 */}
                     <Box>
                       <Typography variant="subtitle1" fontWeight="bold">
                         {idx + 1}. {info.startName} ➝ {info.endName}
@@ -393,7 +373,6 @@ const NaverMapComponent = ({ places }) => {
                       </Stack>
                     </Box>
 
-                    {/* 오른쪽: 대중교통 버튼 */}
                     <Button 
                       variant="outlined" 
                       size="small"
@@ -403,7 +382,6 @@ const NaverMapComponent = ({ places }) => {
                     >
                       대중교통 / 상세 경로 보기
                     </Button>
-
                   </Stack>
                 </CardContent>
               </Card>
