@@ -420,6 +420,7 @@ const DetailPage = () => {
   const [recommendation, setRecommendation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const fetchedIdRef = useRef(null); // 마지막으로 조회한 id 저장
 
   const item = allContent.find((c) => c.search_title === id);
 
@@ -428,6 +429,10 @@ const DetailPage = () => {
       setLoading(false);
       return;
     }
+
+    // 같은 id에 대해 중복 호출 방지(StrictMode 포함)
+    if (fetchedIdRef.current === id) return;
+    fetchedIdRef.current = id;
 
     const fetchRecommendation = async () => {
       setLoading(true);
