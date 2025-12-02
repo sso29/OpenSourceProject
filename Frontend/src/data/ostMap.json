@@ -412,5 +412,115 @@
       "cover": "https://i.scdn.co/image/ab67616d0000b273efcacc80e953b1c4f91d1041",
       "spotifyUrl": "https://open.spotify.com/track/0yo2N52VhrqNqCTIOzrPq6"
     }
+  ],
+"동주": [
+    {
+      "title": "자화상",
+      "artist": "강하늘",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273ee36123010bc609b6045642e",
+      "spotifyUrl": "https://open.spotify.com/track/6NBCO5vjy7HRW9VONZQEjh"
+    }
+  ],
+  "지구를 지켜라!": [
+    {
+      "title": "Over The Rainbow",
+      "artist": "Various Artists",
+      "cover": "https://i.scdn.co/image/ab67616d0000b2739f20f5c6a2c644fcc7ca391c",
+      "spotifyUrl": "https://open.spotify.com/track/2J593fsdtscnL16fbDTj0B"
+    }
+  ],
+  "시": [
+    {
+      "title": "아네스의 노래",
+      "artist": "박기영",
+      "cover": "https://i.scdn.co/image/ab67616d0000b27373c382e6d57f4905447c18bc",
+      "spotifyUrl": "https://open.spotify.com/track/2yaMqIUbRiBTsBa2ktFDv0"
+    }
+  ],
+  "헤어질 결심": [
+    {
+      "title": "안개",
+      "artist": "Jung Hoon Hee",
+      "cover": "https://i.scdn.co/image/ab67616d0000b27325f0b235f0a5323b672fd114",
+      "spotifyUrl": "https://open.spotify.com/track/36j9kcESXeGztRjY74oDLl"
+    }
+  ],
+  "태극기 휘날리며": [
+    {
+      "title": "태극기 휘날리며 에필로그",
+      "artist": "Lee Dong June",
+      "cover": "https://i.scdn.co/image/ab67616d0000b2739bd0849b9224488aff8c51f4",
+      "spotifyUrl": "https://open.spotify.com/track/7uAztXWo5Gi8tshokwETFz"
+    }
+  ],
+  "응답하라 1988": [
+    {
+      "title": "청춘 (Feat. 김창완)",
+      "artist": "김필",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273539409c23305c254750acefd",
+      "spotifyUrl": "https://open.spotify.com/track/0MiTD6OptaqpwrDeLHZsq6"
+    },
+    {
+      "title": "혜화동 (혹은 쌍문동)",
+      "artist": "박보람",
+      "cover": "https://i.scdn.co/image/ab67616d0000b27328b63f0c893544f5adc1efcc",
+      "spotifyUrl": "https://open.spotify.com/track/0OPtu3k4727xyRXVV5Yf6d"
+    }
+  ],
+  "미생": [
+    {
+      "title": "날아",
+      "artist": "이승열",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273e7f6eaeffdda2a5e75b8df41",
+      "spotifyUrl": "https://open.spotify.com/track/0U4gMX1z7VAGvwPpjHjuq3"
+    }
+  ],
+  "나의 아저씨": [
+    {
+      "title": "어른",
+      "artist": "Sondia",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273904295277c8e443e39c8e5d9",
+      "spotifyUrl": "https://open.spotify.com/track/3JKv5rt1H6o3TomGYdSsai"
+    }
+  ],
+  "시그널": [
+    {
+      "title": "회상",
+      "artist": "장범준",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273014e9cc7b3143b28e61a49f6",
+      "spotifyUrl": "https://open.spotify.com/track/5taHEqSavn4BmdAPRjFGP3"
+    }
+  ],
+  "모래시계": [
+    {
+      "title": "Cranes",
+      "artist": "Iosif Kobzon",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273ff62772ac3fa50b9203207e6",
+      "spotifyUrl": "https://open.spotify.com/track/44l8SL9dCcdoSoeI2QQOkl"
+    }
+  ],
+  "디어 마이 프렌즈": [
+    {
+      "title": "Want To Be Free",
+      "artist": "린(Lyn)",
+      "cover": "https://i.scdn.co/image/ab67616d0000b27387e1ddb75ce3ac107cf59e29",
+      "spotifyUrl": "https://open.spotify.com/track/4CTIVPQYgopNVodsymEB9s"
+    }
+  ],
+  "갯마을 차차차": [
+    {
+      "title": "로맨틱 선데이",
+      "artist": "카더가든",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273ec714aa5e8dbf55110b2a31c",
+      "spotifyUrl": "https://open.spotify.com/track/16YZbdkJtyvsjV8UKOwQBB"
+    }
+  ],
+  "나빌레라": [
+    {
+      "title": "My Day",
+      "artist": "태민 (TAEMIN)",
+      "cover": "https://i.scdn.co/image/ab67616d0000b273c95c4d382783a6109b9de1b8",
+      "spotifyUrl": "https://open.spotify.com/track/6tRGDcL8puwtHHPhac0uoq"
+    }
   ]
 }
